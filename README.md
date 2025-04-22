@@ -24,11 +24,13 @@ Design goals
 * Upon reencryption,
     * Mounted directories are unmounted.
     * Decrypted regular files are `shred`ed.
+* Files remain decrypted till explicitly `lock`ed.
 
 # Commands
 
 * `unlock $f` - Unlock a protected file, idempotently. It is an error to unlock an unprotected file.
 * `lock $f` - Lock a protected file, idempotently. It is an error to lock an unprotected file.
-* `cd $f` - Unlock if necessary and move inside a directory. It is an error for `$f` to be a regular file. Does not conform to the standard `cd` interface.
+* `cd $f` - Unlock if necessary and move inside a directory. It is an error for `$f` to be a non-directory. Does not conform to the standard `cd` interface.
 * `ls | tree` - List the files in the current directory like `tree`. Does not conform to the standard `ls` or `tree` interface.
-* `protsus protect $f` - Protect a file.
+* `open $f` - Unlock if necessary and open a regular file (via `xdg-open`). It is an error for `$f` to be a non-regular file.
+* `protsus protect $f` - Protect a file and leave it in a `lock`ed state.
