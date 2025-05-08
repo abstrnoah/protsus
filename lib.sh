@@ -10,7 +10,7 @@ oops() {
 
 # Dummy shred for development
 shred() {
-    echo "Seriously shredding this file :sunglasses:"
+    echo "Seriously shredding this file right now"
 }
 
 path_to_protected_path() {
@@ -23,7 +23,7 @@ path_to_protected_path() {
 gpg_encrypt() {
     local f="$1"
     local pf="$(path_to_protected_path "$f")"
-    gpg --output "$pf" --symmetric
+    gpg --output "$pf" --symmetric "$f"
 }
 
 protect() {
@@ -47,5 +47,5 @@ lock() {
     local f="$1"
 }
 
-unlock() {
-}
+# unlock() {
+# }
