@@ -44,11 +44,25 @@ check_shred() {
     && is_locked "$f" >/dev/null
 }
 
+check_lock_idempotent() {
+    local f="$1"
+    local pf="$(path_to_protected_path "$f")"
+    lock "$f" &>/dev/null
+    local f_contents="$(cat "$f")"
+    local pf_contents="$(cat "$pf")"
+    lock "$f" &>/dev/null
+    lock "$f" &>/dev/null
+    diff -q <(lock "$f") <(echo "$0: Already locked: $f")
+    diff -q <(echo "$f_contents") "$f"
+    diff -q <(echo "$pf_contents") "$pf"
+}
+
 rm -rf "$target"
 mkdir -p "$target"
 cd "$target"
 
 echo -en "$cleartext" > "$f"
 protect "$f"
-do_check protect check_protected_file "$(path_to_protected_path "$f")" "$cleartext"
-do_check shred check_shred "$f" "$cleartext"
+do_check "protect" check_protected_file "$(path_to_protected_path "$f")" "$cleartext"
+do_check "shred" check_shred "$f" "$cleartext"
+do_check "lock idempotent" check_lock_idempotent "$f"

@@ -74,5 +74,9 @@ protect_f() {
     lock "$f"
 }
 
-# unlock() {
-# }
+unlock() {
+    local f="$1"
+    if ! is_protected "$f"; then
+        oops "unlock: You can't unlock an unprotected file."
+    fi
+}
