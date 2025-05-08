@@ -51,6 +51,10 @@ is_locked() {
     diff -q <(echo "$tombstone") "$f" &>/dev/null
 }
 
+is_unlocked() {
+    ! is_locked "$@"
+}
+
 lock() {
     local f="$1"
     if ! is_protected "$f"; then
@@ -91,4 +95,12 @@ unlock() {
         return 0
     fi
     decrypt "$f"
+}
+
+open() {
+    local f="$1"
+    if is_protected "$f"; then
+        unlock "$f"
+    fi
+    xdg-open "$f"
 }

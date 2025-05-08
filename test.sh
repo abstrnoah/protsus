@@ -5,7 +5,12 @@
 target="./protsus-test-target"
 passphrase="1nf3cted"
 cleartext="Super secret stuff"
-f="testfile.txt"
+f="testfile"
+pf="$(path_to_protected_path "$f")"
+
+clearimage_f=$(readlink -f "./secret-image.png")
+
+teststatus=PASSED
 
 # teardown() {
 # }
@@ -18,6 +23,7 @@ do_check() {
         echo "TEST: $name: PASS"
     else
         echo "TEST: $name: FAIL"
+        teststatus=FAILED
     fi
 }
 
@@ -86,10 +92,19 @@ protect "$f"
 do_check "protect" check_protected_file "$(path_to_protected_path "$f")" "$cleartext"
 do_check "lock" check_lock "$f" "$cleartext"
 do_check "lock idempotent" check_lock_idempotent "$f"
-
 unlock "$f"
 do_check "unlock" check_unlock "$f" "$cleartext"
 do_check "unlock idempotent" check_unlock_idempotent "$f"
 lock "$f"
 do_check "lock" check_lock "$f" "$cleartext"
 do_check "lock idempotent" check_lock_idempotent "$f"
+rm "$f" "$pf"
+
+cp "$clearimage_f" "$f"
+protect "$f"
+open "$f"
+do_check "image unlocked after open" is_unlocked "$f"
+lock "$f"
+do_check "image locked after open+lock" is_locked "$f"
+
+echo "RESULTS: $teststatus"
