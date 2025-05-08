@@ -4,7 +4,7 @@
 
 target="./protsus-test-target"
 passphrase="1nf3cted"
-cleartext="Super secret stuff\n"
+cleartext="Super secret stuff"
 f="testfile.txt"
 
 # teardown() {
@@ -31,15 +31,15 @@ check_protected_file() {
     local pf="$1"
     shift
     local cleartext="$1"
-    diff -q <(unsafe_decrypt "$pf") <(echo -en "$cleartext") >/dev/null
+    diff -q <(unsafe_decrypt "$pf") <(echo "$cleartext") >/dev/null
 }
 
-check_shred() {
+check_lock() {
     local f="$1"
     shift
     local cleartext="$1"
     test -f "$f" \
-    && ! diff -q <(echo -en "$cleartext") "$f" >/dev/null \
+    && ! diff -q <(echo "$cleartext") "$f" >/dev/null \
     && diff -q <(echo "$tombstone") "$f" >/dev/null \
     && is_locked "$f" >/dev/null
 }
@@ -57,12 +57,39 @@ check_lock_idempotent() {
     diff -q <(echo "$pf_contents") "$pf"
 }
 
+check_unlock_idempotent() {
+    local f="$1"
+    local pf="$(path_to_protected_path "$f")"
+    unlock "$f" &>/dev/null
+    local f_contents="$(cat "$f")"
+    local pf_contents="$(cat "$pf")"
+    unlock "$f" &>/dev/null
+    unlock "$f" &>/dev/null
+    diff -q <(unlock "$f") <(echo "$0: Already unlocked: $f")
+    diff -q <(echo "$f_contents") "$f"
+    diff -q <(echo "$pf_contents") "$pf"
+}
+
+check_unlock() {
+    local f="$1"
+    shift
+    local cleartext="$1"
+    diff -q <(echo "$cleartext") "$f" >/dev/null
+}
+
 rm -rf "$target"
 mkdir -p "$target"
 cd "$target"
 
-echo -en "$cleartext" > "$f"
+echo "$cleartext" > "$f"
 protect "$f"
 do_check "protect" check_protected_file "$(path_to_protected_path "$f")" "$cleartext"
-do_check "shred" check_shred "$f" "$cleartext"
+do_check "lock" check_lock "$f" "$cleartext"
+do_check "lock idempotent" check_lock_idempotent "$f"
+
+unlock "$f"
+do_check "unlock" check_unlock "$f" "$cleartext"
+do_check "unlock idempotent" check_unlock_idempotent "$f"
+lock "$f"
+do_check "lock" check_lock "$f" "$cleartext"
 do_check "lock idempotent" check_lock_idempotent "$f"

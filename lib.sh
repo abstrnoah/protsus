@@ -27,10 +27,17 @@ path_to_protected_path() {
     echo "$dn/.$bn.protsus"
 }
 
-gpg_encrypt() {
+encrypt() {
     local f="$1"
     local pf="$(path_to_protected_path "$f")"
     gpg --no-random-seed-file --armour --output "$pf" --symmetric "$f" 2>/dev/null
+}
+
+decrypt() {
+    local f="$1"
+    local pf="$(path_to_protected_path "$f")"
+    rm "$f"
+    gpg --no-random-seed-file --output "$f" --decrypt "$pf" 2>/dev/null
 }
 
 is_protected() {
@@ -70,7 +77,7 @@ protect() {
 
 protect_f() {
     local f="$1"
-    gpg_encrypt "$f"
+    encrypt "$f"
     lock "$f"
 }
 
@@ -79,4 +86,9 @@ unlock() {
     if ! is_protected "$f"; then
         oops "unlock: You can't unlock an unprotected file."
     fi
+    if ! is_locked "$f"; then
+        say "Already unlocked: $f"
+        return 0
+    fi
+    decrypt "$f"
 }
