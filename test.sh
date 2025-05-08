@@ -3,7 +3,7 @@
 . ./lib.sh
 
 target="./protsus-test-target"
-passphrase="infected"
+passphrase="1nf3cted"
 cleartext="Super secret stuff\n"
 f="testfile.txt"
 
@@ -11,7 +11,7 @@ f="testfile.txt"
 # }
 # trap teardown EXIT INT QUIT TERM
 
-do_test() {
+do_check() {
     local name="$1"
     shift
     if "$@"; then
@@ -21,11 +21,27 @@ do_test() {
     fi
 }
 
+unsafe_decrypt() {
+    local pf="$1"
+    gpg --batch --pinentry-mode loopback --passphrase "$passphrase" --decrypt "$pf" &>/dev/null \
+    || gpg --decrypt "$pf" 2>/dev/null
+}
+
 check_protected_file() {
     local pf="$1"
     shift
     local cleartext="$1"
-    diff -q <(gpg --no-random-seed-file --batch --passphrase "$passphrase" --decrypt "$pf" 2&>/dev/null) <(echo -en "$cleartext") >/dev/null
+    diff -q <(unsafe_decrypt "$pf") <(echo -en "$cleartext") >/dev/null
+}
+
+check_shred() {
+    local f="$1"
+    shift
+    local cleartext="$1"
+    test -f "$f" \
+    && ! diff -q <(echo -en "$cleartext") "$f" >/dev/null \
+    && diff -q <(echo "$tombstone") "$f" >/dev/null \
+    && is_locked "$f" >/dev/null
 }
 
 rm -rf "$target"
@@ -34,4 +50,5 @@ cd "$target"
 
 echo -en "$cleartext" > "$f"
 protect "$f"
-do_test protect check_protected_file "$(path_to_protected_path "$f")" "$cleartext"
+do_check protect check_protected_file "$(path_to_protected_path "$f")" "$cleartext"
+do_check shred check_shred "$f" "$cleartext"
