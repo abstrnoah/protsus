@@ -33,8 +33,8 @@ do_check() {
 
 unsafe_decrypt() {
     local pf="$1"
-    gpg --batch --pinentry-mode loopback --passphrase "$passphrase" --decrypt "$pf" &>/dev/null \
-    || gpg --decrypt "$pf" 2>/dev/null
+    command gpg --batch --pinentry-mode loopback --passphrase "$passphrase" --decrypt "$pf" &>/dev/null \
+    || command gpg --decrypt "$pf" 2>/dev/null
 }
 
 diff() {
@@ -68,7 +68,7 @@ check_idempotent() {
     cp "$pf" "$pf.old"
     "$c" "$f" &>/dev/null
     "$c" "$f" &>/dev/null
-    diff "$"$c"d" "$f"
+    diff "$f.old" "$f"
     diff "$pf.old" "$pf"
 }
 
@@ -109,4 +109,3 @@ do_check "lock idempotent" check_idempotent lock "$f"
 # do_check "image unlocked after open" is_unlocked "$f"
 # lock "$f"
 # do_check "image locked after open+lock" is_locked "$f"
-

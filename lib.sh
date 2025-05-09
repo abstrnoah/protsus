@@ -27,17 +27,27 @@ path_to_protected_path() {
     echo "$dn/.$bn.protsus"
 }
 
-encrypt() {
+gpg() {
+    command gpg --no-random-seed-file --armour "$@" 2>/dev/null
+}
+
+encrypt_f() {
     local f="$1"
     local pf="$(path_to_protected_path "$f")"
-    gpg --no-random-seed-file --armour --output "$pf" --symmetric "$f" 2>/dev/null
+    gpg --output "$pf" --symmetric "$f"
 }
+
+# encrypt_d() {
+#     local f="$1"
+#     local pf="$(path_to_protected_path "$f")"
+#     tar czpf - "$f" | encrypt 
+# }
 
 decrypt() {
     local f="$1"
     local pf="$(path_to_protected_path "$f")"
     rm "$f"
-    gpg --no-random-seed-file --output "$f" --decrypt "$pf" 2>/dev/null
+    gpg --output "$f" --decrypt "$pf"
 }
 
 is_protected() {
@@ -81,9 +91,13 @@ protect() {
 
 protect_f() {
     local f="$1"
-    encrypt "$f"
+    encrypt_f "$f"
     lock "$f"
 }
+
+# protect_d() {
+#     local f="$1"
+# }
 
 unlock() {
     local f="$1"
