@@ -5,7 +5,7 @@ fi
 tombstone="skullemoji"
 
 say() {
-    echo "$0: $@"
+    echo "$@"
 }
 
 oops() {
@@ -43,7 +43,7 @@ encrypt_d() {
     tar czpf - "$f" | gpg --output "$pf" --symmetric
 }
 
-decrypt() {
+decrypt_f() {
     local f="$1"
     local pf="$(path_to_protected_path "$f")"
     rm "$f"
@@ -110,7 +110,13 @@ unlock() {
         say "Already unlocked: $f"
         return 0
     fi
-    decrypt "$f"
+    if test -d "$f"; then
+        decrypt_d "$f"
+    elif test -f "$f"; then
+        decrypt_f "$f"
+    else
+        oops "unlock: Invalid filetype: $f"
+    fi
 }
 
 open() {
