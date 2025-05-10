@@ -16,6 +16,9 @@ temp="$(mktemp -d \
         || oops "unable to create temporary build directory")"
 
 teardown() {
+    if test -z "$gottoend"; then
+        teststatus=FAILED
+    fi
     echo "RESULTS: $teststatus"
     rm -rf "$temp"
 }
@@ -86,8 +89,21 @@ check_open_with_cat() {
     local f="$1"
     shift
     local cf="$1"
-    diff <(open cat "$f") "$cf"
+    diff <(open og_cat "$f") "$cf"
     lock "$f"
+}
+
+check_cat() {
+    local f="$1"
+    shift
+    local cf="$1"
+    diff <(cat "$f") "$cf"
+    lock "$f"
+}
+
+check_ls() {
+    local f="$1"
+    diff <(ls "$f" | head -n-2 | tail -n+2) -
 }
 
 rm -rf "$target"
@@ -109,6 +125,7 @@ lock "$f"
 do_check "lock" check_lock "$f" "$cf"
 do_check "lock idempotent" check_idempotent lock "$f"
 do_check "open cat" check_open_with_cat "$f" "$cf"
+do_check "cat" check_cat "$f" "$cf"
 
 cf="$testimage"
 f="image.png"
@@ -131,5 +148,58 @@ do_check "lock" check_lock "$f" "$cf"
 do_check "lock idempotent" check_idempotent lock "$f"
 unlock "$f"
 do_check "unlock" check_unlock "$f/" "$cf/"
+lock "$f"
 
-# TODO open non-protected
+do_check "ls" check_ls . <<EOF
+├── dir
+├── image.png
+└── regular-file
+EOF
+
+
+
+mkdir -p protected_dir1/protected_dir2/protected_dir3/
+echo "$cleartext" > protected_dir1/protected_dir2/protected_dir3/sus_evidence.txt
+protect protected_dir1/protected_dir2/protected_dir3/sus_evidence.txt
+protect protected_dir1/protected_dir2/protected_dir3
+protect protected_dir1/protected_dir2
+protect protected_dir1
+do_check "ls" check_ls . <<EOF
+├── dir
+├── image.png
+├── protected_dir1
+└── regular-file
+EOF
+unlock "protected_dir1"
+do_check "ls" check_ls . <<EOF
+├── dir
+├── image.png
+├── protected_dir1
+│   └── protected_dir2
+└── regular-file
+EOF
+unlock "protected_dir1/protected_dir2"
+do_check "ls" check_ls . <<EOF
+├── dir
+├── image.png
+├── protected_dir1
+│   └── protected_dir2
+│       └── protected_dir3
+└── regular-file
+EOF
+unlock "protected_dir1/protected_dir2/protected_dir3"
+do_check "ls" check_ls . <<EOF
+├── dir
+├── image.png
+├── protected_dir1
+│   └── protected_dir2
+│       └── protected_dir3
+│           └── sus_evidence.txt
+└── regular-file
+EOF
+unlock "protected_dir1/protected_dir2/protected_dir3/sus_evidence.txt"
+cf="$temp/cleartext"
+do_check "unlock" check_unlock "protected_dir1/protected_dir2/protected_dir3/sus_evidence.txt" "$cf"
+
+
+gottoend=true

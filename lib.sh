@@ -76,7 +76,7 @@ is_locked() {
 get_type() {
     local f="$1"
     if is_locked "$f"; then
-        cat "$f";
+        command cat "$f";
     else
         stat "$f" -c '%F'
     fi
@@ -112,7 +112,7 @@ lock() {
 protect() {
     local f="$1"
     if is_protected "$f"; then
-        oops "File already protected: $f"
+        oops "protect: File already protected: $f"
     fi
     if test -d "$f"; then
         protect_d "$f"
@@ -138,7 +138,7 @@ protect_d() {
 unlock() {
     local f="$1"
     if ! is_protected "$f"; then
-        oops "unlock: You can't unlock an unprotected file."
+        oops "unlock: You can't unlock an unprotected file: $f"
     fi
     if ! is_locked "$f"; then
         say "Already unlocked: $f"
@@ -157,11 +157,40 @@ open() {
     local c="$1"
     shift
     local f="$1"
-    if ! test -f "$f"; then
-        oops "Unable to open non-regular file: $f"
-    fi
     if is_protected "$f"; then
         unlock "$f"
     fi
     "$c" "$f"
+}
+
+ls() {
+    local f="$1"
+    if ! is_d "$f"; then
+        oops "ls: Unable to list a non-directory: $f"
+    fi
+    open tree "$f"
+}
+
+og_cat() {
+    command cat "$@"
+}
+
+og_feh() {
+    command feh "$@"
+}
+
+cat() {
+    local f="$1"
+    if ! is_f "$f"; then
+        oops "cat: Unable to print a non-regular file: $f"
+    fi
+    open og_cat "$f"
+}
+
+feh() {
+    local f="$1"
+    if ! is_f "$f"; then
+        oops "feh: Unable to view a non-regular file: $f"
+    fi
+    open og_feh "$f"
 }
