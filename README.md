@@ -1,6 +1,6 @@
 # protsus
 
-Protect sus evidence from the crewmates.
+Protect suspicious evidence from the frosh.
 
 __WARNING:__ This software is not meant for mission-critical encryption. It was created for a fun puzzle, not to protect your social security number. It does use actual encryption (via GnuPG) but does not make much effort to prevent cleartext from persisting on disk.
 
