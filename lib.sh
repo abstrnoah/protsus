@@ -73,6 +73,25 @@ is_locked() {
         || command diff -q <(echo "$stat_type_d") "$f" >/dev/null)
 }
 
+get_type() {
+    local f="$1"
+    if is_locked "$f"; then
+        cat "$f";
+    else
+        stat "$f" -c '%F'
+    fi
+}
+
+is_f() {
+    local f="$1"
+    test "$(get_type "$f")" = "$stat_type_f"
+}
+
+is_d() {
+    local f="$1"
+    test "$(get_type "$f")" = "$stat_type_d"
+}
+
 is_unlocked() {
     ! is_locked "$@"
 }
@@ -92,6 +111,9 @@ lock() {
 
 protect() {
     local f="$1"
+    if is_protected "$f"; then
+        oops "File already protected: $f"
+    fi
     if test -d "$f"; then
         protect_d "$f"
     elif test -f "$f"; then
@@ -122,9 +144,9 @@ unlock() {
         say "Already unlocked: $f"
         return 0
     fi
-    if test "$(cat "$f")" = "$stat_type_d" ; then
+    if is_d "$f"; then
         decrypt_d "$f"
-    elif test "$(cat "$f")" = "$stat_type_f" ; then
+    elif is_f "$f"; then
         decrypt_f "$f"
     else
         oops "unlock: Invalid filetype: $f"
@@ -132,9 +154,14 @@ unlock() {
 }
 
 open() {
+    local c="$1"
+    shift
     local f="$1"
+    if ! test -f "$f"; then
+        oops "Unable to open non-regular file: $f"
+    fi
     if is_protected "$f"; then
         unlock "$f"
     fi
-    xdg-open "$f"
+    "$c" "$f"
 }

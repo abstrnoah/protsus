@@ -82,6 +82,14 @@ check_unlock() {
     && is_unlocked "$f"
 }
 
+check_open_with_cat() {
+    local f="$1"
+    shift
+    local cf="$1"
+    diff <(open cat "$f") "$cf"
+    lock "$f"
+}
+
 rm -rf "$target"
 mkdir -p "$target"
 cd "$target"
@@ -100,17 +108,18 @@ do_check "unlock idempotent" check_idempotent unlock "$f"
 lock "$f"
 do_check "lock" check_lock "$f" "$cf"
 do_check "lock idempotent" check_idempotent lock "$f"
+do_check "open cat" check_open_with_cat "$f" "$cf"
 
-# cf="$testimage"
-# f="image.png"
-# cp "$testimage" "$f"
-# protect "$f"
-# do_check "protect" check_protected_file "$(path_to_protected_path "$f")" "$cf"
-# do_check "lock" check_lock "$f" "$cf"
-# open "$f"
-# do_check "image unlocked after open" is_unlocked "$f"
-# lock "$f"
-# do_check "image locked after open+lock" is_locked "$f"
+cf="$testimage"
+f="image.png"
+cp "$testimage" "$f"
+protect "$f"
+do_check "protect" check_protected_file "$(path_to_protected_path "$f")" "$cf"
+do_check "lock" check_lock "$f" "$cf"
+open feh "$f"
+do_check "image unlocked after open" is_unlocked "$f"
+lock "$f"
+do_check "image locked after open+lock" is_locked "$f"
 
 cf="$temp/cleartree"
 f="./dir"
@@ -122,3 +131,5 @@ do_check "lock" check_lock "$f" "$cf"
 do_check "lock idempotent" check_idempotent lock "$f"
 unlock "$f"
 do_check "unlock" check_unlock "$f/" "$cf/"
+
+# TODO open non-protected
