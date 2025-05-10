@@ -1,8 +1,10 @@
+set -e
 if test -n "${DEBUG:-}"; then
     set -x
 fi
 
-tombstone="skullemoji"
+stat_type_f="regular file"
+stat_type_d="directory"
 
 say() {
     echo "$@"
@@ -15,9 +17,10 @@ oops() {
 
 shred() {
     local f="$1"
+    local t="$(stat "$f" -c '%F')"
     say "This message will self-destruct: $f"
-    command shred "$f"
-    echo "$tombstone" > "$f"
+    rm -rf "$f"
+    echo "$t" > "$f"
 }
 
 path_to_protected_path() {
@@ -50,6 +53,13 @@ decrypt_f() {
     gpg --output "$f" --decrypt "$pf"
 }
 
+decrypt_d() {
+    local f="$1"
+    local pf="$(path_to_protected_path "$f")"
+    rm "$f"
+    gpg --decrypt "$pf" | tar xzf -
+}
+
 is_protected() {
     local f="$1"
     local pf="$(path_to_protected_path "$f")"
@@ -58,7 +68,9 @@ is_protected() {
 
 is_locked() {
     local f="$1"
-    test -f "$f" && diff <(echo "$tombstone") "$f"
+    test -f "$f" \
+    && (command diff -q <(echo "$stat_type_f") "$f" >/dev/null \
+        || command diff -q <(echo "$stat_type_d") "$f" >/dev/null)
 }
 
 is_unlocked() {
@@ -110,9 +122,9 @@ unlock() {
         say "Already unlocked: $f"
         return 0
     fi
-    if test -d "$f"; then
+    if test "$(cat "$f")" = "$stat_type_d" ; then
         decrypt_d "$f"
-    elif test -f "$f"; then
+    elif test "$(cat "$f")" = "$stat_type_f" ; then
         decrypt_f "$f"
     else
         oops "unlock: Invalid filetype: $f"

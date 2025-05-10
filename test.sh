@@ -38,8 +38,12 @@ unsafe_decrypt() {
     || command gpg --decrypt "$pf" 2>/dev/null
 }
 
+diff_type() {
+    test "$(stat "$1" -c '%F')" = "$(stat "$2" -c '%F')"
+}
+
 diff() {
-    command diff -q "$@" >/dev/null
+    command diff -q "$1" "$2" >/dev/null
 }
 
 check_protected_file() {
@@ -53,10 +57,7 @@ check_lock() {
     local f="$1"
     shift
     local cf="$1"
-    test -f "$f" \
-    && ! diff "$cf" "$f" \
-    && diff <(echo "$tombstone") "$f" \
-    && is_locked "$f"
+    is_locked "$f"
 }
 
 check_idempotent() {
@@ -77,7 +78,7 @@ check_unlock() {
     local f="$1"
     shift
     local cf="$1"
-    diff "$cf" "$f" \
+    command diff -r "$cf" "$f" \
     && is_unlocked "$f"
 }
 
@@ -111,8 +112,13 @@ do_check "lock idempotent" check_idempotent lock "$f"
 # lock "$f"
 # do_check "image locked after open+lock" is_locked "$f"
 
-cf="$temp"
-f="dir"
-cp -R .. "$temp"
+cf="$temp/cleartree"
+f="./dir"
+cp -R ../.git "$cf"
 cp -R "$cf" "$f"
-encrypt_d "$f"
+# encrypt_d "$f"
+protect "$f"
+do_check "lock" check_lock "$f" "$cf"
+do_check "lock idempotent" check_idempotent lock "$f"
+unlock "$f"
+do_check "unlock" check_unlock "$f/" "$cf/"
