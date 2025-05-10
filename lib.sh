@@ -37,11 +37,11 @@ encrypt_f() {
     gpg --output "$pf" --symmetric "$f"
 }
 
-# encrypt_d() {
-#     local f="$1"
-#     local pf="$(path_to_protected_path "$f")"
-#     tar czpf - "$f" | encrypt 
-# }
+encrypt_d() {
+    local f="$1"
+    local pf="$(path_to_protected_path "$f")"
+    tar czpf - "$f" | gpg --output "$pf" --symmetric
+}
 
 decrypt() {
     local f="$1"
@@ -58,7 +58,7 @@ is_protected() {
 
 is_locked() {
     local f="$1"
-    diff -q <(echo "$tombstone") "$f" &>/dev/null
+    test -f "$f" && diff <(echo "$tombstone") "$f"
 }
 
 is_unlocked() {
@@ -81,7 +81,7 @@ lock() {
 protect() {
     local f="$1"
     if test -d "$f"; then
-        oops "Unimplemented TODO"
+        protect_d "$f"
     elif test -f "$f"; then
         protect_f "$f"
     else
@@ -95,9 +95,11 @@ protect_f() {
     lock "$f"
 }
 
-# protect_d() {
-#     local f="$1"
-# }
+protect_d() {
+    local f="$1"
+    encrypt_d "$f"
+    lock "$f"
+}
 
 unlock() {
     local f="$1"

@@ -4,6 +4,7 @@
 
 target="./test-target"
 passphrase="1nf3cted"
+cleartext="Super secret content"
 pf="$(path_to_protected_path "$f")"
 
 testimage=$(readlink -f "./secret-image.png")
@@ -64,12 +65,12 @@ check_idempotent() {
     local f="$1"
     local pf="$(path_to_protected_path "$f")"
     "$c" "$f" &>/dev/null
-    cp "$f" "$f.old"
-    cp "$pf" "$pf.old"
+    cp "$f" "$temp/$f.old"
+    cp "$pf" "$temp/$pf.old"
     "$c" "$f" &>/dev/null
     "$c" "$f" &>/dev/null
-    diff "$f.old" "$f"
-    diff "$pf.old" "$pf"
+    diff "$temp/$f.old" "$f"
+    diff "$temp/$pf.old" "$pf"
 }
 
 check_unlock() {
@@ -87,7 +88,7 @@ cd "$target"
 cf="$temp/cleartext"
 f="regular-file"
 echo "$cleartext" > "$cf"
-echo "$cleartext" > "$f"
+cp "$cf" "$f"
 protect "$f"
 do_check "protect" check_protected_file "$(path_to_protected_path "$f")" "$cf"
 do_check "lock" check_lock "$f" "$cf"
@@ -109,3 +110,9 @@ do_check "lock idempotent" check_idempotent lock "$f"
 # do_check "image unlocked after open" is_unlocked "$f"
 # lock "$f"
 # do_check "image locked after open+lock" is_locked "$f"
+
+cf="$temp"
+f="dir"
+cp -R .. "$temp"
+cp -R "$cf" "$f"
+encrypt_d "$f"
