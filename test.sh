@@ -106,9 +106,15 @@ check_ls() {
     diff <(ls "$f" | head -n-2 | tail -n+2) -
 }
 
+check_pwd() {
+    local p="$1"
+    test "$p" = "$(pwd)"
+}
+
 rm -rf "$target"
 mkdir -p "$target"
-cd "$target"
+og_cd "$target"
+og_pwd="$PWD"
 
 cf="$temp/cleartext"
 f="regular-file"
@@ -171,7 +177,7 @@ do_check "ls" check_ls . <<EOF
 └── regular-file
 EOF
 unlock "protected_dir1"
-do_check "ls" check_ls . <<EOF
+do_check "ls after unlock 1" check_ls . <<EOF
 ├── dir
 ├── image.png
 ├── protected_dir1
@@ -179,7 +185,7 @@ do_check "ls" check_ls . <<EOF
 └── regular-file
 EOF
 unlock "protected_dir1/protected_dir2"
-do_check "ls" check_ls . <<EOF
+do_check "ls after unlock 2" check_ls . <<EOF
 ├── dir
 ├── image.png
 ├── protected_dir1
@@ -188,7 +194,7 @@ do_check "ls" check_ls . <<EOF
 └── regular-file
 EOF
 unlock "protected_dir1/protected_dir2/protected_dir3"
-do_check "ls" check_ls . <<EOF
+do_check "ls after unlock 3" check_ls . <<EOF
 ├── dir
 ├── image.png
 ├── protected_dir1
@@ -199,7 +205,24 @@ do_check "ls" check_ls . <<EOF
 EOF
 unlock "protected_dir1/protected_dir2/protected_dir3/sus_evidence.txt"
 cf="$temp/cleartext"
-do_check "unlock" check_unlock "protected_dir1/protected_dir2/protected_dir3/sus_evidence.txt" "$cf"
+do_check "unlock nested regular file" check_unlock "protected_dir1/protected_dir2/protected_dir3/sus_evidence.txt" "$cf"
 
+lock "protected_dir1/protected_dir2/protected_dir3/sus_evidence.txt"
+lock "protected_dir1/protected_dir2/protected_dir3"
+lock "protected_dir1/protected_dir2"
+lock "protected_dir1"
+cd protected_dir1
+do_check "pwd" check_pwd "$og_pwd/protected_dir1"
+do_check "ls after cd" check_ls . <<EOF
+└── protected_dir2
+EOF
+cd ..
+lock protected_dir1
+do_check "ls all locked" check_ls . <<EOF
+├── dir
+├── image.png
+├── protected_dir1
+└── regular-file
+EOF
 
 gottoend=true

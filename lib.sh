@@ -175,10 +175,6 @@ og_cat() {
     command cat "$@"
 }
 
-og_feh() {
-    command feh "$@"
-}
-
 cat() {
     local f="$1"
     if ! is_f "$f"; then
@@ -187,10 +183,26 @@ cat() {
     open og_cat "$f"
 }
 
+og_feh() {
+    command feh "$@"
+}
+
 feh() {
     local f="$1"
     if ! is_f "$f"; then
         oops "feh: Unable to view a non-regular file: $f"
     fi
     open og_feh "$f"
+}
+
+og_cd() {
+    command cd "$@"
+}
+
+cd() {
+    local f="$1"
+    if ! is_d "$f"; then
+        oops "cd: Unable to change into a non-directory: $f"
+    fi
+    open og_cd "$f"
 }
