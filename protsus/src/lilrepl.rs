@@ -20,9 +20,11 @@
 //! # Example
 //! ```
 //! use std::collections::HashMap;
+//! use rustyline::error::ReadlineError;
+//! use rustyline::{DefaultEditor, Result};
 //! use protsus::lilrepl::{LilreplError, Result, Lil};
 //! use protsus::lilrepl::NArgs::*;
-//! use protsus::lilrepl::default_prompt;
+//! use protsus::lilrepl::default_prompter;
 //!
 //! fn print_arguments(lil: Lil) {
 //!     println!("Arguments: {lil.args:?}");
@@ -32,7 +34,7 @@
 //!     let commands = HashMap::from([
 //!         ("print-arguments", Command {evaluator: print_arguments, nargs: Any}),
 //!     ]);
-//!     let lil = Lil::new(default_prompt, commands);
+//!     let mut lil = Lil::new(default_prompter, commands)?;
 //!
 //!     while let Ok(()) = lil.rep();
 //! }
@@ -61,17 +63,83 @@ pub enum NArgs {
 }
 
 /// Command specification
-pub struct Command<F> where F: FnOnce(&Lil) {
-    evaluator: F,
+pub struct Command {
+    evaluator: Evaluator,
     nargs: NArgs,
 }
 
+/// A map of command specifications
+pub type Commands = HashMap<String, Evaluator>;
+
+/// A function that produces a prompt from repl state.
+pub type Prompter = Box<dyn Fn(&Lil) -> String>;
+
 /// Repl state
 pub struct Lil {
+    rl: DefaultEditor,
+    commands: Commands,
+    root: PathBuf,
     pub cwd: PathBuf,
     pub args: Vec<String>,
-    commands: HashMap<String, Evaluator>,
+    pub stdout: String,
+    pub stderr: String,
+    prompter: Prompter,
 }
+
+impl Lil {
+    pub fn new(prompter: Prompter, commands: Commands) -> Result<Lil> {
+        let cwd = current_dir?;
+        let rl = DefaultEditor::new()?;
+        Lil {
+            rl: rl,
+            commands: commands,
+            root: cwd,
+            cwd: cwd,
+            args: Vec::new(),
+            stdout: String::new(),
+            stderr: String::new(),
+            prompter: Prompter,
+        }
+    }
+
+    pub fn rep(&self) {
+        // READ
+        // Prompt
+        let line = match self.rl.readline(self.prompter(self)) {
+        // Get input
+            Ok(line) => line,
+            Err(ReadlineError::Interrupted) => {
+                println!("CTRL-C");
+                return LilreplError::Exit
+            },
+            Err(ReadlineError::Eof) => {
+                println!("CTRL-D");
+                return LilreplError::Exit
+            },
+            Err(err) => {
+                println!("Error: {:?}", err);
+                return LilreplError::Exit
+            }
+        }
+        // Tokenise
+        // shell_words
+
+        // Match command
+        // Validate number of arguments
+
+        // EVALUATE
+        // Run command evaluator
+
+        // PRINT
+        // Print standard out
+        // Print standard error
+        // Change directory
+
+        Ok(())
+    }
+}
+
+
 
 
 // #[cfg(test)]
