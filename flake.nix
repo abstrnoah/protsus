@@ -8,15 +8,41 @@
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 
-  outputs = inputs@{ ... }:
-    inputs.flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    inputs@{ ... }:
+    inputs.flake-utils.lib.eachDefaultSystem (
+      system:
       let
         upstreams = {
           inherit (inputs.nixpkgs.legacyPackages.${system})
-            writeShellApplication coreutils;
+            writeScriptBin
+            coreutils
+            ;
+          inherit (inputs.nixpkgs.lib.attrsets) genAttrs;
         };
-      in {
-      # TODO
-      });
+      in
+      let
+        make_cla =
+          name:
+          upstreams.writeScriptBin name ''
+            #!/bin/env bash
+            ${builtins.readFile ./lib.sh}
+            ${name} "$@"
+          '';
+        commands = [
+          "cat"
+          "cd"
+          "feh"
+          "lock"
+          "ls"
+          "open"
+          "protect"
+          "unlock"
+        ];
+      in
+      {
+        packages = upstreams.genAttrs commands make_cla;
+      }
+    );
 
 }
