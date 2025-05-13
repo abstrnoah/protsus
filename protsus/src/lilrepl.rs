@@ -20,9 +20,7 @@
 //! # Example
 //! ```
 //! use std::collections::HashMap;
-//! use rustyline::error::ReadlineError;
-//! use rustyline::{DefaultEditor, Result};
-//! use protsus::lilrepl::{LilreplError, Result, Lil};
+//! use protsus::lilrepl::{Result, Lil};
 //! use protsus::lilrepl::NArgs::*;
 //! use protsus::lilrepl::default_prompter;
 //!
@@ -48,19 +46,22 @@ pub type Evaluator = Box<dyn FnOnce(&Lil)>;
 
 /// Error type for lilrepl
 pub enum LilreplError {
-    Io,
-    Eof,
     /// The repl has exited
     Exit,
     /// The command is not registered with the repl
     InvalidCommandError,
     /// Incorrect number of arguments passed to command
     InvalidNArgsError,
+    /// You can't cd above the repl's root
+    CdAbovIOErroreRootError,
+    /// I/O error
+    IOError,
 }
 
 /// Return type for lilrepl
 pub type Result<T> = std::result::Result<T, LilreplError>;
 
+/// Number of arguments a repl command accepts
 pub enum NArgs {
     NArgs(usize),
     Any,
@@ -72,21 +73,27 @@ pub struct Command {
     nargs: NArgs,
 }
 
-/// A map of command specifications
+/// A map from command strings to command specifications
 pub type Commands = HashMap<String, Command>;
 
 /// A function that produces a prompt from repl state
 pub type Prompter = Box<dyn Fn(&Lil) -> String>;
 
+/// Print path relative to starting directory
+pub fn default_prompter(lil: &Lil) -> String {
+    format!("{}>", lil.cwd.to_str().or(Err(LilreplError::IOError))?)
+}
+
 /// Repl state
 pub struct Lil {
-    rl: DefaultEditor,
+    rl: rustyline::DefaultEditor,
     commands: Commands,
+    /// Where the repl started
     root: PathBuf,
-    pub cwd: PathBuf,
-    pub args: Vec<String>,
-    pub stdout: String,
-    pub stderr: String,
+    cwd: PathBuf,
+    args: Vec<String>,
+    stdout: String,
+    stderr: String,
     prompter: Prompter,
 }
 
@@ -95,18 +102,18 @@ impl Lil {
         let cwd = current_dir?;
         let rl = DefaultEditor::new()?;
         Lil {
-            rl: rl,
-            commands: commands,
+            rl,
+            commands,
             root: cwd,
-            cwd: cwd,
+            cwd,
             args: Vec::new(),
             stdout: String::new(),
             stderr: String::new(),
-            prompter: Prompter,
+            prompter,
         }
     }
 
-    pub fn rep(&self) {
+    pub fn rep(&self) -> Result<()> {
         // READ
         // Prompt
         let line = match self.rl.readline(self.prompter(self)) {
@@ -114,45 +121,47 @@ impl Lil {
             Ok(line) => line,
             Err(ReadlineError::Interrupted) => {
                 println!("CTRL-C");
-                return LilreplError::Exit
+                return Err(LilreplError::Exit)
             },
             Err(ReadlineError::Eof) => {
                 println!("CTRL-D");
-                return LilreplError::Exit
+                return Err(LilreplError::Exit)
             },
             Err(err) => {
                 println!("Error: {:?}", err);
-                return LilreplError::Exit
+                return Err(LilreplError::Exit)
             }
         };
 
         // Tokenise
-        let args = shell_words::split(line)?;
+        let args = shell_words::split(line).or(Err(LilreplError::TokenisationError))?;
 
         // Match command
-        let command = match self.commands.get(args) {
-            Some(command) => command,
-            None => return Err(InvalidCommandError),
-        };
+        let command = self.commands.get(args).unwrap_or(Err(LilreplError::InvalidCommandError))?;
         // Validate number of arguments
         if let NArgs(n) = command.nargs {
-            if n + 1 != lil.args.len() return Err(InvalidNArgsError);
+            if n + 1 != lil.args.len() { return Err(LilreplError::InvalidNArgsError); }
         }
 
         // EVALUATE
         // Run command evaluator
-        command.evaluator(&lil);
+        command.evaluator(&lil)?;
 
         // PRINT
         // Print standard out
+        println!("{}", lil.stdout);
         // Print standard error
+        eprintln!("{}", lil.stderr);
         // Change directory
+        lil.cwd = lil.cwd.absolute().or(Err(LilreplError::IOError))?;
+        if !lil.cwd.starts_with(lil.root) {
+            return Err(LilreplError::CdAboveRootError);
+        }
+        set_current_dir(cwd).or(Err(LilreplError::IOError))?;
 
         Ok(())
     }
 }
-
-
 
 
 // #[cfg(test)]
@@ -160,8 +169,7 @@ impl Lil {
 //     use super::*;
 
 //     #[test]
-//     fn it_works() {
-//         let result = add(2, 2);
-//         assert_eq!(result, 4);
+//     fn default_prompter_test() {
+//         default_prompter(lil)
 //     }
 // }
