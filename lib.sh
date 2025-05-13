@@ -1,10 +1,16 @@
 set -e
-if test -n "${DEBUG:-}"; then
+if test "${DEBUG:-}" = "x"; then
     set -x
 fi
 
 stat_type_f="regular file"
 stat_type_d="directory"
+
+verb() {
+    if test -n "$DEBUG"; then
+        echo "$@"
+    fi
+}
 
 say() {
     echo "$@"

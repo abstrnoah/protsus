@@ -8,15 +8,25 @@
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 
-  outputs = inputs@{ ... }:
-    inputs.flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    inputs@{ ... }:
+    inputs.flake-utils.lib.eachDefaultSystem (
+      system:
       let
         upstreams = {
           inherit (inputs.nixpkgs.legacyPackages.${system})
-            writeShellApplication coreutils;
+            writeScriptBin
+            coreutils
+            ;
         };
-      in {
-      # TODO
-      });
+      in
+      {
+        packages.default = upstreams.writeScriptBin "protsus" ''
+          #!/bin/env bash
+          ${builtins.readFile ./lib.sh}
+          ${builtins.readFile ./main}
+        '';
+      }
+    );
 
 }

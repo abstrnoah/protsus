@@ -1,0 +1,19 @@
+root="$PWD"
+
+prompt() {
+    echo "/${PWD#$root}> "
+}
+
+sad() {
+    echo "Error:" "$@"
+}
+
+while true; do
+    read -p "$(prompt)" -a args
+    c="${args[0]}"
+    verb "Arguments: ${args[@]}"
+    case "$c" in
+        cd) cd "${args[@]}" || continue;;
+        *) sad "Unrecognised command: $c";;
+    esac
+done
