@@ -50,8 +50,12 @@ pub type Evaluator = Box<dyn FnOnce(&Lil)>;
 pub enum LilreplError {
     Io,
     Eof,
-    /// The repl has exited.
+    /// The repl has exited
     Exit,
+    /// The command is not registered with the repl
+    InvalidCommandError,
+    /// Incorrect number of arguments passed to command
+    InvalidNArgsError,
 }
 
 /// Return type for lilrepl
@@ -69,9 +73,9 @@ pub struct Command {
 }
 
 /// A map of command specifications
-pub type Commands = HashMap<String, Evaluator>;
+pub type Commands = HashMap<String, Command>;
 
-/// A function that produces a prompt from repl state.
+/// A function that produces a prompt from repl state
 pub type Prompter = Box<dyn Fn(&Lil) -> String>;
 
 /// Repl state
@@ -120,15 +124,24 @@ impl Lil {
                 println!("Error: {:?}", err);
                 return LilreplError::Exit
             }
-        }
+        };
+
         // Tokenise
-        // shell_words
+        let args = shell_words::split(line)?;
 
         // Match command
+        let command = match self.commands.get(args) {
+            Some(command) => command,
+            None => return Err(InvalidCommandError),
+        };
         // Validate number of arguments
+        if let NArgs(n) = command.nargs {
+            if n + 1 != lil.args.len() return Err(InvalidNArgsError);
+        }
 
         // EVALUATE
         // Run command evaluator
+        command.evaluator(&lil);
 
         // PRINT
         // Print standard out
