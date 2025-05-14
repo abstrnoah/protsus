@@ -26,12 +26,16 @@ curl -L 'https://github.com/abstrnoah/protsus/releases/latest/download/protsus'
 ```
 
 ## Install with readline wrapper
-Wrap `protsus` with `readline` to enable nice editing capabilities, using the following script.
+Wrap `protsus frosh` with `readline` to enable nice editing capabilities, using the following script.
 
 ```sh
 #!/bin/env bash
-rlwrap -c /full/path/to/protsus "$@"
+rlwrap -c /full/path/to/protsus frosh
 ```
+
+If `protsus` is in your `PATH`, then the `protsus-frosh-shell-wrapper` serves this purpose.
+
+You can do `chsh -s /path/to/protsus-frosh-shell-wrapper frosh-username` to set the frosh's shell to protsus.
 
 ## Download from GitHub
 
