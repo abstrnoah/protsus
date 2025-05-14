@@ -6,7 +6,7 @@ name: CI
 on:
   # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ "main" ]
+    branches: [ "release" ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -17,6 +17,9 @@ jobs:
   build:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -30,6 +33,10 @@ jobs:
       - name: Build script
         run: nix build .
 
-      - uses: ncipollo/release-action@v1
+      - uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          artifacts: "result/bin/protsus"
+          tag_name: release-${{ github.sha }}
+          release_name: Release ${{ github.ref }}
+          prerelease: true
