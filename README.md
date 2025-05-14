@@ -37,8 +37,6 @@ If `protsus` is in your `PATH`, then the `protsus-frosh-shell-wrapper` serves th
 
 You can do `chsh -s /path/to/protsus-frosh-shell-wrapper frosh-username` to set the frosh's shell to protsus.
 
-## Download from GitHub
-
 # Usage
 
 ```sh
