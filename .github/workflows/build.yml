@@ -36,5 +36,7 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: release-${{ github.sha }}
-          files: result/bin/protsus
+          files: |
+            result/bin/protsus
+            protsus-frosh-shell-wrapper
           target_commitish: ${{ github.sha }}
