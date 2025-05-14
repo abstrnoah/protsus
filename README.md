@@ -25,16 +25,26 @@ nix build `github:abstrnoah/protsus`
 curl -L 'https://github.com/abstrnoah/protsus/releases/latest/download/protsus'
 ```
 
+## Install with readline wrapper
+Wrap `protsus` with `readline` to enable nice editing capabilities, using the following script.
+
+```sh
+#!/bin/env bash
+rlwrap -c /full/path/to/protsus "$@"
+```
+
 ## Download from GitHub
 
 # Usage
 
 ```sh
 # Start a shell for the frosh
-protsus frosh
+rlwrap -c protsus frosh
 
 # Start a shell for administration
-protsus admin
+rlwrap -c protsus admin
+
+# Use `rlwrap -c` to get nice editing features (-c enables tab-completion).
 ```
 
 `protsus` restricts you to the directory where it is started. That it, you cannot run `cd ..` from the starting directory.
