@@ -36,5 +36,6 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: release-${{ github.sha }}
-          release_name: Release ${{ github.ref }}
           prerelease: true
+          files: result
+          target_commitish: ${{ github.sha }}
