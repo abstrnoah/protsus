@@ -29,7 +29,17 @@ curl -L 'https://github.com/abstrnoah/protsus/releases/latest/download/protsus'
 
 # Usage
 
+```sh
+# Start a shell for the frosh
+protsus frosh
 
+# Start a shell for administration
+protsus admin
+```
+
+`protsus` restricts you to the directory where it is started. That it, you cannot run `cd ..` from the starting directory.
+
+From within the `protsus` prompt, run `help` to see available commands.
 
 # Design
 
