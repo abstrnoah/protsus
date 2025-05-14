@@ -6,18 +6,30 @@ __WARNING:__ This software is not meant for mission-critical encryption. It was 
 
 Created as a component in the 2025 Stack "SERF".
 
-Frosh will be presented with a terminal supporting exactly "three" commands
-* `ls` - List the text files and directories in the current directory.
-* `cd` - Change directories, either `..` (up one level) or to a subdirectory. If the subdirectory is password protected, then they will be prompted for the password and, upon successful decryption, the directory will be decrypted and entered.
-* `open $command` - Open a file using `$command`. If it is password protected, then they will be prompted for the password.
-* `cat` - Run `open cat`.
-* `feh` - Run `open feh`.
-
-Design goals
-* The commands `ls`, `cd`, `cat`, `feh` should behave like normal except that sometimes the user is prompted for a password.
+Design goals:
+* The commands `ls`, `cd`, etc. should behave like normal except that sometimes the user is prompted for a password.
 * The user should not have to use `gpg`, `tar`, or other encryption/archival tools to interact with the directory tree.
 * Little effort will be made (in this first version at least) to prevent the so-inclined crewmate from meddling with the directory structure or breaking abstraction. However, encrypted files should _never_ be accessible without the password.
 * TODO: Support flavour text
+
+# Installation
+
+## Build with Nix
+```sh
+# Writes an executable to `result/bin/protsus`.
+nix build `github:abstrnoah/protsus`
+```
+
+## Get script from GitHub
+```sh
+curl -L 'https://github.com/abstrnoah/protsus/releases/latest/download/protsus'
+```
+
+## Download from GitHub
+
+# Usage
+
+
 
 # Design
 
