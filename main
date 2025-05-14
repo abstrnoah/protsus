@@ -1,19 +1,134 @@
 root="$PWD"
 
-prompt() {
-    echo "/${PWD#$root}> "
+help_admin() {
+    echo "You're an admin, didn't have time to write help for you."
 }
 
-sad() {
-    echo "Error:" "$@"
+help_frosh() {
+    echo "Welcome to protsus,"
+    echo "a shell that protects suspicious evidence from the frosh."
+    echo
+    echo "Some files are encrypted and must be unlocked before viewing."
+    echo "Read below to find out how."
+    echo
+    echo "Commands:"
+    echo
+    echo "help"
+    echo "  Display this help message."
+    echo
+    echo "ls"
+    echo "  List files and directories in current directory,"
+    echo "  recursively diving into already-unlocked subdirectories."
+    echo
+    echo "unlock FILE"
+    echo "  Decrypt the FILE so that it can be opened like a normal file,"
+    echo "  prompting for passphrase."
+    echo
+    echo "lock FILE"
+    echo "  Place a previously-locked file into a locked state."
+    echo
+    echo "The following commands open files."
+    echo "They automatically unlock if necessary."
+    echo
+    echo "cat FILE"
+    echo "  Print the contents of a text file."
+    echo
+    echo "feh FILE"
+    echo "  Display an image."
+    echo
+    echo "cd DIRECTORY"
+    echo "  Change current directory to DIRECTORY."
 }
+
+
+prompt() {
+    local p
+    p="${PWD#$root}"
+    p="${p:-/}"
+    echo "$p> "
+}
+
+doit() {
+    local c="$1"
+    shift
+    local nargs="$1"
+    shift
+    verb "doit arguments: $@"
+    if test "$nargs" -ne "$#"; then
+        oops "Invalid number of arguments: $c wants $nargs but got $#"
+        return
+    fi
+    "$c" "$@"
+}
+
+path_extends() {
+    local a="$(realpath -sm "$1")"
+    shift
+    local b="$(realpath -sm "$1")"
+    shift
+    if test "$a" = "/"; then
+        return 0
+    fi
+    case "$b/" in
+        "$a/"*) return 0;;
+        *) return 1;;
+    esac
+}
+
+cd_chrooted() {
+    local f="$1"
+    if ! path_extends "$root" "$f"; then
+        oops "You cannot move above the root: $f"
+        return
+    fi
+    cd "$f"
+}
+
+tree() {
+    command tree -F "$@" | head -n-2
+}
+
+delegate_admin() {
+    local c="$1"
+    shift
+    case "$c" in
+        help) doit help_admin 0 "$@";;
+        lock) doit lock 1 "$@";;
+        protect) doit protect 1 "$@";;
+        unlock) doit unlock 1 "$@";;
+        open) doit open 2 "$@";;
+        ls) doit tree 0 "$@";;
+        cat) doit cat 1 "$@";;
+        feh) doit feh 1 "$@";;
+        cd) doit cd_chrooted 1 "$@";;
+        *) oops "Unrecognised command: $c";;
+    esac
+}
+
+delegate_frosh() {
+    local c="$1"
+    shift
+    case "$c" in
+        help) doit help_frosh 0 "$@";;
+        lock) doit lock 1 "$@";;
+        unlock) doit unlock 1 "$@";;
+        ls) doit tree 0 "$@";;
+        cat) doit cat 1 "$@";;
+        feh) doit feh 1 "$@";;
+        cd) doit cd_chrooted 1 "$@";;
+        *) oops "Unrecognised command: $c";;
+    esac
+}
+
+case "$1" in
+    help) help_admin; exit;;
+    admin) delegate=delegate_admin;;
+    frosh) delegate=delegate_frosh;;
+    *) oops "Unrecognised command: $1"; exit;;
+esac
 
 while true; do
     read -p "$(prompt)" -a args
-    c="${args[0]}"
     verb "Arguments: ${args[@]}"
-    case "$c" in
-        cd) cd "${args[@]}" || continue;;
-        *) sad "Unrecognised command: $c";;
-    esac
+    "$delegate" "${args[@]}" || continue
 done

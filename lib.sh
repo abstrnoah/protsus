@@ -8,7 +8,7 @@ stat_type_d="directory"
 
 verb() {
     if test -n "$DEBUG"; then
-        echo "$@"
+        echo "DEBUG:" "$@"
     fi
 }
 
@@ -23,7 +23,7 @@ oops() {
 
 shred() {
     local f="$1"
-    local t="$(stat "$f" -c '%F')"
+    local t="$(stat "$f" -c '%F' 2>/dev/null)"
     say "This message will self-destruct: $f"
     rm -rf "$f"
     echo "$t" > "$f"
@@ -82,9 +82,9 @@ is_locked() {
 get_type() {
     local f="$1"
     if is_locked "$f"; then
-        command cat "$f";
+        command cat "$f"
     else
-        stat "$f" -c '%F'
+        stat "$f" -c '%F' 2>/dev/null
     fi
 }
 
@@ -106,6 +106,7 @@ lock() {
     local f="$1"
     if ! is_protected "$f"; then
         oops "lock: You can't lock an unprotected file."
+        return
     fi
     if is_locked "$f"; then
         say "Already locked: $f"
@@ -119,25 +120,27 @@ protect() {
     local f="$1"
     if is_protected "$f"; then
         oops "protect: File already protected: $f"
+        return
     fi
     if test -d "$f"; then
-        protect_d "$f"
+        protect_d "$f" || return
     elif test -f "$f"; then
-        protect_f "$f"
+        protect_f "$f" || return
     else
         oops "protect: Invalid filetype: $f"
+        return
     fi
 }
 
 protect_f() {
     local f="$1"
-    encrypt_f "$f"
+    encrypt_f "$f" || return
     lock "$f"
 }
 
 protect_d() {
     local f="$1"
-    encrypt_d "$f"
+    encrypt_d "$f" || return
     lock "$f"
 }
 
@@ -145,17 +148,19 @@ unlock() {
     local f="$1"
     if ! is_protected "$f"; then
         oops "unlock: You can't unlock an unprotected file: $f"
+        return
     fi
     if ! is_locked "$f"; then
         say "Already unlocked: $f"
         return 0
     fi
     if is_d "$f"; then
-        decrypt_d "$f"
+        decrypt_d "$f" || return
     elif is_f "$f"; then
-        decrypt_f "$f"
+        decrypt_f "$f" || return
     else
         oops "unlock: Invalid filetype: $f"
+        return
     fi
 }
 
@@ -163,8 +168,8 @@ open() {
     local c="$1"
     shift
     local f="$1"
-    if is_protected "$f"; then
-        unlock "$f"
+    if is_protected "$f" &&  is_locked "$f"; then
+        unlock "$f" || return
     fi
     "$c" "$f"
 }
@@ -173,6 +178,7 @@ ls() {
     local f="$1"
     if ! is_d "$f"; then
         oops "ls: Unable to list a non-directory: $f"
+        return
     fi
     open tree "$f"
 }
@@ -185,6 +191,7 @@ cat() {
     local f="$1"
     if ! is_f "$f"; then
         oops "cat: Unable to print a non-regular file: $f"
+        return
     fi
     open og_cat "$f"
 }
@@ -197,6 +204,7 @@ feh() {
     local f="$1"
     if ! is_f "$f"; then
         oops "feh: Unable to view a non-regular file: $f"
+        return
     fi
     open og_feh "$f"
 }
@@ -209,6 +217,7 @@ cd() {
     local f="$1"
     if ! is_d "$f"; then
         oops "cd: Unable to change into a non-directory: $f"
+        return
     fi
     open og_cd "$f"
 }
