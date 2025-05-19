@@ -6,47 +6,45 @@ __WARNING:__ This software is not meant for mission-critical encryption. It was 
 
 Created as a component in the 2025 Stack "SERF".
 
-Design goals:
-* The commands `ls`, `cd`, etc. should behave like normal except that sometimes the user is prompted for a password.
-* The user should not have to use `gpg`, `tar`, or other encryption/archival tools to interact with the directory tree.
-* Little effort will be made (in this first version at least) to prevent the so-inclined crewmate from meddling with the directory structure or breaking abstraction. However, encrypted files should _never_ be accessible without the password.
-* TODO: Support flavour text
-
 # Installation
+
+This package comprises three scripts:
+* `protsus-core` - Is the core script, lacking readline support. Install to your PATH as `protsus-core`.
+* `protsus` - Wraps core with `rlwrap -c`, which gives it nice readline features. Install to PATH as `protsus`.
+* `protsus-frosh-shell` - Is a script meant to be set as the frosh's login shell, takes no arguments.
 
 ## Build with Nix
 ```sh
-# Writes an executable to `result/bin/protsus`.
+# Write the three executables to `result/bin/`
 nix build `github:abstrnoah/protsus`
+
+# Install the scripts to PATH
+cp result/bin/* /bin/
+
+# Set the frosh login shell to protsus
+chsh -s /bin/protsus-frosh-shell FROSH_USERNAME
 ```
 
-## Get script from GitHub
+## Curl from GitHub
 ```sh
-curl -L 'https://github.com/abstrnoah/protsus/releases/latest/download/protsus'
+# Download tarball from GitHub and extract executables to `result/bin/`
+curl -L https://github.com/abstrnoah/protsus/releases/latest/download/protsus.tar.gz | tar xzpf -
+
+# Install the scripts to PATH
+cp result/bin/* /bin/
+
+# Set the frosh login shell to protsus
+chsh -s /bin/protsus-frosh-shell FROSH_USERNAME
 ```
-
-## Install with readline wrapper
-Wrap `protsus frosh` with `readline` to enable nice editing capabilities, using the following script.
-
-```sh
-#!/bin/env bash
-rlwrap -c /full/path/to/protsus frosh
-```
-
-If `protsus` is in your `PATH`, then the `protsus-frosh-shell-wrapper` serves this purpose.
-
-You can do `chsh -s /path/to/protsus-frosh-shell-wrapper frosh-username` to set the frosh's shell to protsus.
 
 # Usage
 
 ```sh
 # Start a shell for the frosh
-rlwrap -c protsus frosh
+protsus frosh
 
 # Start a shell for administration
-rlwrap -c protsus admin
-
-# Use `rlwrap -c` to get nice editing features (-c enables tab-completion).
+protsus admin
 ```
 
 `protsus` restricts you to the directory where it is started. That it, you cannot run `cd ..` from the starting directory.
@@ -71,3 +69,6 @@ From within the `protsus` prompt, run `help` to see available commands.
 * `cd $f` - Unlock if necessary and move inside a directory. It is an error for `$f` to be a non-directory. Does not conform to the standard `cd` interface.
 * `ls` - List the files in the current directory like `tree`. Does not conform to the standard `ls` or `tree` interface.
 * `open $command $f` - Unlock if necessary and open a file.
+
+# TODO
+* Flavour text?

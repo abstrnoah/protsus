@@ -16,16 +16,34 @@
         upstreams = {
           inherit (inputs.nixpkgs.legacyPackages.${system})
             writeScriptBin
-            coreutils
+            symlinkJoin
             ;
         };
       in
-      {
-        packages.default = upstreams.writeScriptBin "protsus" ''
+      let
+        protsus-core = upstreams.writeScriptBin "protsus-core" ''
           #!/bin/env bash
           ${builtins.readFile ./lib.sh}
           ${builtins.readFile ./main}
         '';
+        protsus-rlwrapper = upstreams.writeScriptBin "protsus" ''
+          #!/bin/env bash
+          rlwrap -c protsus-core "$@"
+        '';
+        protsus-frosh-shell = upstreams.writeScriptBin "protsus-frosh-shell" ''
+          #!/bin/env bash
+          protsus frosh
+        '';
+      in
+      {
+        packages.default = upstreams.symlinkJoin {
+          name = "protsus";
+          paths = [
+            protsus-core
+            protsus-rlwrapper
+            protsus-frosh-shell
+          ];
+        };
       }
     );
 
