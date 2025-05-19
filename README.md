@@ -13,6 +13,16 @@ This package comprises three scripts:
 * `protsus` - Wraps core with `rlwrap -c`, which gives it nice readline features. Install to PATH as `protsus`.
 * `protsus-frosh-shell` - Is a script meant to be set as the frosh's login shell, takes no arguments.
 
+## Dependencies
+* bash
+* coreutils
+* diffutils
+* tar
+* gpg
+* [tree](https://oldmanprogrammer.net/source.php?dir=projects/tree)
+* [feh](https://feh.finalrewind.org/)
+* [rlwrap](https://github.com/hanslub42/rlwrap)
+
 ## Build with Nix
 ```sh
 # Write the three executables to `result/bin/`
