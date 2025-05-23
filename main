@@ -110,12 +110,12 @@ delegate_frosh() {
     shift
     case "$c" in
         help) doit help_frosh 0 "$@";;
-        lock) doit lock 1 "$@";;
-        unlock) doit unlock 1 "$@";;
+        lock) doit lock 1 "$*";;
+        unlock) doit unlock 1 "$*";;
         ls) doit tree 0 "$@";;
-        cat) doit cat 1 "$@";;
-        feh) doit feh 1 "$@";;
-        cd) doit cd_chrooted 1 "$@";;
+        cat) doit cat 1 "$*";;
+        feh) doit feh 1 "$*";;
+        cd) doit cd_chrooted 1 "$*";;
         *) oops "Unrecognised command: $c";;
     esac
 }
