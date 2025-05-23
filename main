@@ -5,8 +5,8 @@ help_admin() {
 }
 
 help_frosh() {
-    echo "Welcome to protsus,"
-    echo "a shell that protects suspicious evidence from the frosh."
+    echo "Welcome to LCARSUS, Section 31's bespoke rewrite of LCARS,"
+    echo "designed to protect the Section's secrets from SERF Cadets."
     echo
     echo "Some files are encrypted and must be unlocked before viewing."
     echo "Read below to find out how."
